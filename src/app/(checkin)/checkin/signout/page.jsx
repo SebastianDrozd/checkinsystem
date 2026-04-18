@@ -4,6 +4,8 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import styles from "../../../styles/signout.module.css";
 import { ArrowLeft, Search } from "lucide-react";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { getAllACheckIns,signOutGuest } from "@/api/guests";
 
 const mockSignedInUsers = [
   {
@@ -53,6 +55,27 @@ export default function SignOutPage() {
     setUsers((prev) => prev.filter((u) => u.id !== id));
   };
 
+  const {data: guests,isLoading, isError} = useQuery({
+    queryKey : ["guests"],
+    queryFn : () => getAllACheckIns()
+  })
+
+  const signOutMutation = useMutation({
+  
+    mutationFn: (id) => signOutGuest(id),
+    onSuccess: (data, variables) => {
+      console.log("sign out successful", data);
+      setUsers((prev) => prev.filter((u) => u.id !== variables));
+    },
+    onError: (error) => {
+      console.error("sign out error", error);
+    },
+  })
+
+  if(isLoading){
+    return "loading...."
+  }
+  console.log("guests", guests, isLoading, isError);
   return (
     <div className={styles.container}>
       <div className={styles.inner}>
@@ -92,14 +115,14 @@ export default function SignOutPage() {
             </thead>
 
             <tbody>
-              {filteredUsers.length > 0 ? (
-                filteredUsers.map((user) => (
+              {guests?.length > 0 ? (
+                guests?.map((user) => (
                   <tr key={user.id}>
                     <td>{user.firstName} {user.lastName}</td>
                     <td>{user.type}</td>
                     <td>{user.company || "-"}</td>
                     <td>{user.department || "-"}</td>
-                    <td>{user.signedInAt}</td>
+                    <td>{user.timeIn}</td>
                     <td>
                       <button
                         className={styles.signOutButton}

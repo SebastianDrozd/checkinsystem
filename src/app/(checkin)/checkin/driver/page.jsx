@@ -4,6 +4,8 @@ import { useState } from "react";
 import Link from "next/link";
 import styles from "../../../styles/driverpage.module.css";
 import { ArrowLeft } from "lucide-react";
+import { useMutation } from "@tanstack/react-query";
+import { CreateNewDriver } from "@/api/guests";
 
 export default function DriverCheckInPage() {
   const [formData, setFormData] = useState({
@@ -17,21 +19,90 @@ export default function DriverCheckInPage() {
     cargoDestination: "",
   });
 
+  const [errors, setErrors] = useState({});
+
   const handleChange = (e) => {
     const { name, value } = e.target;
+
     setFormData((prev) => ({
       ...prev,
       [name]: value,
+    }));
+
+    // clear error while typing
+    setErrors((prev) => ({
+      ...prev,
+      [name]: "",
     }));
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
+
+    const newErrors = {};
+
+    if (!formData.visitType) {
+      newErrors.visitType = "Please select Pickup or Delivery";
+    }
+
+    if (!formData.firstName.trim()) {
+      newErrors.firstName = "First name is required";
+    }
+
+    if (!formData.lastName.trim()) {
+      newErrors.lastName = "Last name is required";
+    }
+
+    if (!formData.cityFrom.trim()) {
+      newErrors.cityFrom = "City is required";
+    }
+
+    if (!formData.companyFrom.trim()) {
+      newErrors.companyFrom = "Company is required";
+    }
+
+    if (!formData.carrierName.trim()) {
+      newErrors.carrierName = "Carrier name is required";
+    }
+
+    if (!formData.cargo.trim()) {
+      newErrors.cargo = "Cargo is required";
+    }
+
+    if (!formData.cargoDestination.trim()) {
+      newErrors.cargoDestination = "Destination is required";
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+
+    const data = {
+      FirstName : formData.firstName,
+      LastName : formData.lastName,
+      OriginCity : formData.cityFrom,
+      Company : formData.companyFrom,
+      Carrier : formData.carrierName,
+      Cargo : formData.cargo,
+      DestinationCity : formData.cargoDestination,
+      DeliveryType : formData.visitType
+    }
+    saveMutation.mutate(data);
     console.log("driver form submitted", formData);
 
     // submit to backend here
   };
-
+  
+  const saveMutation = useMutation ({
+    mutationFn : (data) => CreateNewDriver(data),
+    onSuccess : (data) => {
+      console.log("driver created", data);
+    },
+    onError : (error) => {
+      console.error("error creating driver", error);
+    }
+  })
   return (
     <div className={styles.container}>
       <div className={styles.inner}>
@@ -50,6 +121,7 @@ export default function DriverCheckInPage() {
         <form className={styles.formCard} onSubmit={handleSubmit}>
           <div className={`${styles.field} ${styles.fullWidth}`}>
             <label>Pick Up or Delivery</label>
+
             <div className={styles.radioGroup}>
               <label className={styles.radioCard}>
                 <input
@@ -73,94 +145,90 @@ export default function DriverCheckInPage() {
                 <span>Delivery</span>
               </label>
             </div>
+
+            {errors.visitType && (
+              <span className={styles.errorText}>{errors.visitType}</span>
+            )}
           </div>
 
           <div className={styles.grid}>
             <div className={styles.field}>
-              <label htmlFor="lastName">Last Name</label>
+              <label>Last Name</label>
               <input
-                id="lastName"
                 name="lastName"
-                type="text"
                 value={formData.lastName}
                 onChange={handleChange}
-                placeholder="Enter last name"
-                autoComplete="family-name"
+                className={errors.lastName ? styles.inputError : ""}
               />
+              {errors.lastName && <span className={styles.errorText}>{errors.lastName}</span>}
             </div>
 
             <div className={styles.field}>
-              <label htmlFor="firstName">First Name</label>
+              <label>First Name</label>
               <input
-                id="firstName"
                 name="firstName"
-                type="text"
                 value={formData.firstName}
                 onChange={handleChange}
-                placeholder="Enter first name"
-                autoComplete="given-name"
+                className={errors.firstName ? styles.inputError : ""}
               />
+              {errors.firstName && <span className={styles.errorText}>{errors.firstName}</span>}
             </div>
 
             <div className={styles.field}>
-              <label htmlFor="cityFrom">What city are you coming from?</label>
+              <label>City</label>
               <input
-                id="cityFrom"
                 name="cityFrom"
-                type="text"
                 value={formData.cityFrom}
                 onChange={handleChange}
-                placeholder="Enter city"
+                className={errors.cityFrom ? styles.inputError : ""}
               />
+              {errors.cityFrom && <span className={styles.errorText}>{errors.cityFrom}</span>}
             </div>
 
             <div className={styles.field}>
-              <label htmlFor="companyFrom">What company are you from?</label>
+              <label>Company</label>
               <input
-                id="companyFrom"
                 name="companyFrom"
-                type="text"
                 value={formData.companyFrom}
                 onChange={handleChange}
-                placeholder="Enter company name"
-                autoComplete="organization"
+                className={errors.companyFrom ? styles.inputError : ""}
               />
+              {errors.companyFrom && <span className={styles.errorText}>{errors.companyFrom}</span>}
             </div>
 
             <div className={styles.field}>
-              <label htmlFor="carrierName">Carrier Name</label>
+              <label>Carrier Name</label>
               <input
-                id="carrierName"
                 name="carrierName"
-                type="text"
                 value={formData.carrierName}
                 onChange={handleChange}
-                placeholder="Enter carrier name"
+                className={errors.carrierName ? styles.inputError : ""}
               />
+              {errors.carrierName && <span className={styles.errorText}>{errors.carrierName}</span>}
             </div>
 
             <div className={styles.field}>
-              <label htmlFor="cargo">What is your cargo?</label>
+              <label>Cargo</label>
               <input
-                id="cargo"
                 name="cargo"
-                type="text"
                 value={formData.cargo}
                 onChange={handleChange}
-                placeholder="Describe cargo"
+                className={errors.cargo ? styles.inputError : ""}
               />
+              {errors.cargo && <span className={styles.errorText}>{errors.cargo}</span>}
             </div>
 
             <div className={`${styles.field} ${styles.fullWidth}`}>
-              <label htmlFor="cargoDestination">Where is the cargo going?</label>
+              <label>Destination</label>
               <textarea
-                id="cargoDestination"
                 name="cargoDestination"
                 value={formData.cargoDestination}
                 onChange={handleChange}
-                placeholder="Enter cargo destination"
-                rows={4}
+                className={errors.cargoDestination ? styles.inputError : ""}
               />
+              {errors.cargoDestination && (
+                <span className={styles.errorText}>{errors.cargoDestination}</span>
+              )}
             </div>
           </div>
 
