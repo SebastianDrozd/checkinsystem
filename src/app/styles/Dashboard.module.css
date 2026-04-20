@@ -1,0 +1,905 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  padding: 28px;
+  height: calc(100dvh - 60px);
+  min-height: 0;
+  background: #dbdee0;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.loadingState {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  font-size: 1rem;
+  color: #64748b;
+  background: #f8fafc;
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.eyebrow {
+  margin: 0 0 6px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #94a3b8;
+}
+
+.title {
+  margin: 0;
+  font-size: clamp(2rem, 4vw, 2.7rem);
+  font-weight: 700;
+  letter-spacing: -0.05em;
+  color: #0f172a;
+}
+
+.subtitle {
+  margin: 10px 0 0;
+  max-width: 720px;
+  font-size: 0.98rem;
+  line-height: 1.6;
+  color: #64748b;
+}
+
+.headerActions {
+  display: flex;
+  gap: 10px;
+}
+
+.primaryButton,
+.secondaryButton,
+.ghostButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 42px;
+  padding: 0 16px;
+  border-radius: 12px;
+  font-size: 0.92rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    transform 0.18s ease,
+    opacity 0.18s ease,
+    background 0.18s ease,
+    border-color 0.18s ease;
+}
+
+.primaryButton {
+  border: none;
+  background: #111827;
+  color: #ffffff;
+}
+
+.secondaryButton {
+  border: 1px solid #dbe2ea;
+  background: #ffffff;
+  color: #0f172a;
+}
+
+.ghostButton {
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  color: #475569;
+}
+
+.primaryButton:hover,
+.secondaryButton:hover,
+.ghostButton:hover {
+  transform: translateY(-1px);
+  opacity: 0.96;
+}
+
+.heroGrid {
+  display: grid;
+  grid-template-columns: minmax(320px, 1.2fr) minmax(0, 2fr);
+  gap: 16px;
+  flex-shrink: 0;
+}
+
+
+.heroCard {
+  position: relative;
+  overflow: hidden;
+  padding: 22px;
+  border-radius: 24px;
+ 
+  color: #000000;
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.16);
+}
+
+.heroCard::before {
+  content: "";
+  position: absolute;
+  width: 220px;
+  height: 220px;
+  right: -70px;
+  top: -70px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  filter: blur(12px);
+}
+
+.heroTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+
+.heroIcon {
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  background: rgba(17, 165, 17, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.livePill {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(12, 167, 71, 0.1);
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.heroMetric {
+  font-size: clamp(2.8rem, 5vw, 4rem);
+  font-weight: 700;
+  letter-spacing: -0.06em;
+  line-height: 1;
+}
+
+.heroTitle {
+  margin: 12px 0 8px;
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.heroSub {
+  margin: 0;
+  max-width: 420px;
+  font-size: 0.94rem;
+  line-height: 1.6;
+  color: rgba(0, 0, 0, 0.78);
+}
+
+.heroMeta {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 22px;
+}
+
+.heroMetaItem {
+  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.heroMetaLabel {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 0.8rem;
+  color: rgba(0, 0, 0, 0.66);
+}
+
+.heroMetaItem strong {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #000000;
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.statCard {
+  background: rgba(255, 255, 255, 0.84);
+  border: 1px solid #e7edf3;
+  border-radius: 20px;
+  padding: 18px;
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.04);
+}
+
+.statTop {
+  display: flex;
+  justify-content: flex-start;
+  margin-bottom: 18px;
+}
+
+.statIcon,
+.breakdownIcon {
+  width: 40px;
+  height: 40px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.blue {
+  background: #eaf2ff;
+  color: #2563eb;
+}
+
+.purple {
+  background: #f2ebff;
+  color: #7c3aed;
+}
+
+.green {
+  background: #e9f8ef;
+  color: #059669;
+}
+
+.orange {
+  background: #fff3e8;
+  color: #ea580c;
+}
+
+.statValue {
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  color: #0f172a;
+}
+
+.statLabel {
+  margin-top: 6px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.statSub {
+  margin-top: 6px;
+  font-size: 0.88rem;
+  color: #64748b;
+}
+
+.contentGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(320px, 0.95fr);
+  grid-template-rows: minmax(0, 1fr);
+  gap: 16px;
+  align-items: stretch;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.leftColumn,
+.rightColumn {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+}
+.panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.84);
+  border: 1px solid #e7edf3;
+  border-radius: 22px;
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.04);
+  overflow: hidden;
+}
+.chartPanel {
+  min-height: 250px;
+}
+
+.signinsPanel,
+.activityPanel {
+  flex: 1;
+  min-height: 0;
+  max-height: none;
+}
+
+
+
+
+
+.panelHeader {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 20px 14px;
+  border-bottom: 1px solid #eef2f7;
+  background: rgba(255, 255, 255, 0.96);
+}
+
+.panelHeader h2 {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.panelHeader p {
+  margin: 6px 0 0;
+  font-size: 0.9rem;
+  color: #64748b;
+}
+
+.panelHeaderIcon {
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+  background: #f8fafc;
+  color: #475569;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.panelBody {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+.chartBody {
+  display: flex;
+  align-items: stretch;
+  justify-content: center;
+  height: 100%;
+  padding: 18px 18px 16px;
+}
+
+.chartBars {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 14px;
+  width: 100%;
+  align-items: end;
+}
+
+.chartBarItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.chartBarTrack {
+  position: relative;
+  width: 100%;
+  max-width: 46px;
+  height: 130px;
+  border-radius: 16px;
+  background: linear-gradient(180deg, #f8fafc 0%, #eef2ff 100%);
+  display: flex;
+  align-items: end;
+  padding: 4px;
+}
+
+.chartBarFill {
+  width: 100%;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #60a5fa 0%, #2563eb 100%);
+}
+
+.chartBarValue {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #334155;
+}
+
+.chartBarLabel {
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+.signinList,
+.activityList {
+  height: 100%;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  padding: 10px 14px 14px;
+}
+
+.signinRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 12px 8px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.signinRow:last-child {
+  border-bottom: none;
+}
+
+.userBlock {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #e2e8f0, #f1f5f9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #0f172a;
+  flex-shrink: 0;
+}
+
+.userMeta {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.userName {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #0f172a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.userSub {
+  font-size: 0.8rem;
+  color: #64748b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.signinRowRight {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.visitor {
+  background: #e9f8ef;
+  color: #059669;
+}
+
+.driver {
+  background: #fff3e8;
+  color: #ea580c;
+}
+
+.temp {
+  background: #f2ebff;
+  color: #7c3aed;
+}
+
+.contractor {
+  background: #eaf2ff;
+  color: #2563eb;
+}
+
+.timeCell {
+  color: #475569;
+  font-weight: 600;
+  font-size: 0.84rem;
+  white-space: nowrap;
+}
+
+.breakdownList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 18px 18px;
+}
+
+.breakdownItem {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.breakdownMeta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex: 1;
+}
+
+.breakdownMeta span {
+  font-size: 0.92rem;
+  color: #475569;
+}
+
+.breakdownMeta strong {
+  font-size: 0.98rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.activityList {
+  height: 100%;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  padding: 10px 14px 16px;
+}
+
+.activityItem {
+  display: flex;
+  gap: 12px;
+  padding: 12px 6px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.activityItem:last-child {
+  border-bottom: none;
+}
+
+.activityIcon {
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
+  background: #f8fafc;
+  color: #475569;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.activityContent {
+  min-width: 0;
+}
+
+.activityContent p {
+  margin: 0 0 4px;
+  font-size: 0.92rem;
+  font-weight: 500;
+  line-height: 1.45;
+  color: #0f172a;
+}
+
+.activityContent span {
+  font-size: 0.82rem;
+  color: #64748b;
+}
+
+.emptyState {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 24px;
+  color: #64748b;
+  font-size: 0.95rem;
+}
+
+@media (max-width: 1280px) {
+  .heroGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .contentGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .activityPanel {
+    min-height: 360px;
+    max-height: 360px;
+  }
+}
+
+@media (max-width: 768px) {
+  .page {
+    padding: 18px;
+  }
+
+  .header {
+    flex-direction: column;
+  }
+
+  .headerActions {
+    width: 100%;
+  }
+
+  .primaryButton,
+  .secondaryButton {
+    flex: 1;
+  }
+
+  .statsGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .heroMeta {
+    grid-template-columns: 1fr;
+  }
+
+  .chartBars {
+    gap: 10px;
+  }
+
+  .signinRow {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .signinRowRight {
+    width: 100%;
+    justify-content: space-between;
+  }
+}
+
+.skeletonShimmer {
+  position: relative;
+  overflow: hidden;
+  background: #e2e8f0;
+}
+
+.skeletonShimmer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.72) 50%,
+    transparent 100%
+  );
+  animation: skeletonWave 1.4s ease-in-out infinite;
+}
+
+@keyframes skeletonWave {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.skeletonCard {
+  pointer-events: none;
+}
+
+.skeletonIcon {
+  width: 40px;
+  height: 40px;
+  border-radius: 14px;
+}
+
+.skeletonValue {
+  width: 72px;
+  height: 34px;
+  border-radius: 10px;
+  margin-bottom: 10px;
+}
+
+.skeletonLabel {
+  width: 110px;
+  height: 16px;
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+
+.skeletonSub {
+  width: 150px;
+  height: 14px;
+  border-radius: 8px;
+}
+
+.skeletonHeading {
+  width: 140px;
+  height: 18px;
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+
+.skeletonText {
+  width: 200px;
+  max-width: 100%;
+  height: 14px;
+  border-radius: 8px;
+}
+
+.skeletonPanelIcon {
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+}
+
+.skeletonChartBar {
+  width: 100%;
+  border-radius: 12px;
+}
+
+.skeletonMiniText {
+  width: 26px;
+  height: 10px;
+  border-radius: 6px;
+  display: block;
+}
+
+.skeletonButton {
+  width: 88px;
+  height: 38px;
+  border-radius: 12px;
+}
+
+.skeletonName {
+  width: 140px;
+  max-width: 100%;
+  height: 14px;
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+
+.skeletonSubLine {
+  width: 190px;
+  max-width: 100%;
+  height: 12px;
+  border-radius: 8px;
+}
+
+.skeletonBadge {
+  width: 82px;
+  height: 28px;
+  border-radius: 999px;
+}
+
+.skeletonTime {
+  width: 56px;
+  height: 14px;
+  border-radius: 8px;
+}
+
+.skeletonActivityLine {
+  width: 210px;
+  max-width: 100%;
+  height: 14px;
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+
+.skeletonActivityTime {
+  width: 60px;
+  height: 12px;
+  border-radius: 8px;
+}
+
+.tableWrap {
+  height: 100%;
+  min-height: 0;
+  overflow: auto;
+  padding: 10px 14px 14px;
+}
+
+.signinsTable {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  min-width: 720px;
+}
+
+.signinsTable thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: rgba(248, 250, 252, 0.96);
+  backdrop-filter: blur(8px);
+  text-align: left;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #64748b;
+  padding: 14px 14px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.signinsTable tbody tr {
+  transition: background 0.18s ease;
+}
+
+.signinsTable tbody tr:hover {
+  background: #f8fafc;
+}
+
+.signinsTable tbody td {
+  padding: 14px 14px;
+  border-bottom: 1px solid #f1f5f9;
+  vertical-align: middle;
+}
+
+.signinsTable tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.tableUserCell {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.tableUserMeta {
+  min-width: 0;
+}
+
+.tableUserName {
+  display: block;
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: #0f172a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tableCellMuted {
+  display: inline-block;
+  font-size: 0.88rem;
+  color: #64748b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 180px;
+}
+
+.signinsTable .timeCell {
+  font-size: 0.84rem;
+}
+
+@media (max-width: 768px) {
+  .tableWrap {
+    padding: 8px 10px 10px;
+  }
+
+  .signinsTable {
+    min-width: 640px;
+  }
+
+  .signinsTable thead th,
+  .signinsTable tbody td {
+    padding: 12px 12px;
+  }
+}

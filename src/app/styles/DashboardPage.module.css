@@ -1,0 +1,9 @@
+.container {
+  grid-column: 2 / 3;
+  width: 100%;
+  max-width: 1400px;
+  min-width: 0;
+  margin: 0 auto;
+  padding: 24px;
+ 
+}

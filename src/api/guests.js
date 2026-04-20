@@ -25,8 +25,12 @@ const getAllACheckIns = async () => {
     return reponse.data;
 }
 
-const signOutGuest = async (id) => {
-    const reponse = await axios.post(`${API_URL}/signout/${id}`);
+const signOutGuest = async (user) => {
+    const reponse = await axios.post(`${API_URL}/signout`, user);
+    return reponse.data;
+}
+const getDashboardCards = async () => {
+    const reponse = await axios.get(`${API_URL}/stats`);
     return reponse.data;
 }
 module.exports = {
@@ -35,5 +39,6 @@ module.exports = {
     CreateNewTemp,
     CreateNewDriver,
     getAllACheckIns,
-    signOutGuest
+    signOutGuest,
+    getDashboardCards,
 }

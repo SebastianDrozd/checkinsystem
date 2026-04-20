@@ -2,70 +2,73 @@
 
 import Link from "next/link";
 import styles from "../../styles/checkin.module.css";
-import { User, Truck, HardHat, Users } from "lucide-react";
+import { User, Truck, Users, Briefcase } from "lucide-react";
 
 const options = [
   {
+    href: "/checkin/visitor",
     label: "Visitor",
     description: "General guests and meetings",
-    href: "/checkin/visitor",
     icon: User,
+    colorClass: "blue",
   },
   {
+    href: "/checkin/driver",
     label: "Driver",
     description: "Deliveries and pickups",
-    href: "/checkin/driver",
     icon: Truck,
+    colorClass: "orange",
   },
   {
+    href: "/checkin/temp-worker",
     label: "Temp Worker",
     description: "Agency or temporary staff",
-    href: "/checkin/temp-worker",
     icon: Users,
+    colorClass: "purple",
   },
   {
+    href: "/checkin/contractor",
     label: "Contractor / Service Worker",
     description: "Vendors, contractors, and service visits",
-    href: "/checkin/contractor",
-    icon: HardHat,
+    icon: Briefcase,
+    colorClass: "green",
   },
 ];
 
-export default function CheckInHome() {
+export default function CheckInHomePage() {
   return (
-    <div className={styles.container}>
-      <div className={styles.inner}>
-        <div className={styles.header}>
-          <h1>Welcome</h1>
-          <p>Please select your check-in type</p>
-        </div>
+    <>
+      <div className={styles.rightHeader}>
+        <span className={styles.sectionLabel}>Check-in type</span>
+      </div>
 
-        <div className={styles.grid}>
-          {options.map((option) => {
-            const Icon = option.icon;
+      <div className={styles.cardList}>
+        {options.map((option, index) => {
+          const Icon = option.icon;
 
-            return (
-              <Link key={option.href} href={option.href} className={styles.card}>
-                <div className={styles.iconWrapper}>
-                  <Icon size={34} strokeWidth={2} />
+          return (
+            <Link
+              key={option.href}
+              href={option.href}
+              className={`${styles.optionCard} ${styles.fadeInCard}`}
+              style={{ animationDelay: `${index * 90}ms` }}
+            >
+              <div className={styles.optionLeft}>
+                <div className={`${styles.optionIcon} ${styles[option.colorClass]}`}>
+                  <Icon size={24} strokeWidth={2} />
                 </div>
 
-                <div className={styles.cardContent}>
+                <div className={styles.optionContent}>
                   <h2>{option.label}</h2>
                   <p>{option.description}</p>
                 </div>
-              </Link>
-            );
-          })}
-        </div>
+              </div>
 
-        {/* SIGN OUT LINK */}
-        <div className={styles.footer}>
-          <Link href="/checkin/signout" className={styles.signOutLink}>
-            Already signed in? Click here to sign out
-          </Link>
-        </div>
+              <div className={styles.optionArrow}>→</div>
+            </Link>
+          );
+        })}
       </div>
-    </div>
+    </>
   );
 }

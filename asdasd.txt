@@ -1,0 +1,63 @@
+<div className={`${styles.panel} ${styles.signinsPanel}`}>
+            <div className={styles.panelHeader}>
+              <div>
+                <h2>Current Sign-Ins</h2>
+                <p>Compact live roster of everyone currently on site</p>
+              </div>
+              <button className={styles.ghostButton}>
+                View all <ChevronRight size={15} />
+              </button>
+            </div>
+
+            <div className={styles.panelBody}>
+              <div className={styles.signinList}>
+                {signins.length > 0 ? (
+                  signins.map((user) => {
+                    const fullName = `${user.firstName} ${user.lastName}`;
+
+                    const typeConfig = {
+                      Visitor: { color: styles.visitor, icon: UserRound },
+                      Driver: { color: styles.driver, icon: Truck },
+                      "Temp Worker": { color: styles.temp, icon: Users },
+                      Contractor: { color: styles.contractor, icon: Briefcase },
+                    };
+
+                    const config = typeConfig[user.type] || {};
+                    const Icon = config.icon;
+
+                    return (
+                      <div key={user.id} className={styles.signinRow}>
+                        <div className={styles.userBlock}>
+                          <div className={styles.avatar}>
+                            <User size={16} strokeWidth={2.2} />
+                          </div>
+
+                          <div className={styles.userMeta}>
+                            <span className={styles.userName}>{fullName}</span>
+                            <span className={styles.userSub}>
+                              {user.company || "No company"} • {user.department || "No department"}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className={styles.signinRowRight}>
+                          <span className={`${styles.badge} ${config.color}`}>
+                            {Icon && <Icon size={12} />}
+                            {user.type}
+                          </span>
+                          <span className={styles.timeCell}>
+                            {new Date(user.timeIn).toLocaleTimeString([], {
+                              hour: "numeric",
+                              minute: "2-digit",
+                            })}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div className={styles.emptyState}>No active sign-ins.</div>
+                )}
+              </div>
+            </div>
+          </div>
