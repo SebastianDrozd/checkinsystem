@@ -1,8 +1,7 @@
 'use client'
 
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import {
-  Bell,
   ChevronDown,
   ClipboardList,
   Factory,
@@ -16,6 +15,9 @@ import {
 import styles from "../styles/Navbar.module.css";
 import { useEffect, useRef, useState } from "react";
 import axios from "axios";
+
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:5080/api/Guest";
 
 const getEventIcon = (type) => {
   switch (type) {
@@ -32,10 +34,16 @@ const getEventIcon = (type) => {
   }
 };
 
+const visitorTypeOptions = [
+  { label: "All", value: "all" },
+  { label: "Temp", value: "temp" },
+  { label: "Driver", value: "driver" },
+  { label: "Visitor", value: "visitor" },
+  { label: "Contractor", value: "contractor" },
+];
+
 const Navbar = ({ logs = [] }) => {
-  const path = usePathname();
   const router = useRouter();
-  const pathNames = path.split("/").filter((path) => path);
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
@@ -46,12 +54,41 @@ const Navbar = ({ logs = [] }) => {
   const [exportForm, setExportForm] = useState({
     startDate: "",
     endDate: "",
-    visitorType: "all",
+    visitorTypes: ["all"],
   });
+
+  const [userSearch, setUserSearch] = useState("");
+  const [userResults, setUserResults] = useState([]);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [searchingUsers, setSearchingUsers] = useState(false);
 
   const dropdownRef = useRef(null);
   const notificationsRef = useRef(null);
   const exportModalRef = useRef(null);
+
+  const toggleVisitorType = (type) => {
+    setExportForm((prev) => {
+      let updated = [...prev.visitorTypes];
+
+      if (type === "all") {
+        return { ...prev, visitorTypes: ["all"] };
+      }
+
+      updated = updated.filter((t) => t !== "all");
+
+      if (updated.includes(type)) {
+        updated = updated.filter((t) => t !== type);
+      } else {
+        updated.push(type);
+      }
+
+      if (updated.length === 0) {
+        updated = ["all"];
+      }
+
+      return { ...prev, visitorTypes: updated };
+    });
+  };
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -74,6 +111,7 @@ const Navbar = ({ logs = [] }) => {
         !exportModalRef.current.contains(event.target)
       ) {
         setExportModalOpen(false);
+        setUserResults([]);
       }
     };
 
@@ -81,12 +119,76 @@ const Navbar = ({ logs = [] }) => {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  useEffect(() => {
+    const trimmed = userSearch.trim();
+
+    const debounce = setTimeout(async () => {
+      if (!trimmed) {
+        setUserResults([]);
+        setSearchingUsers(false);
+        return;
+      }
+
+      if (
+        selectedUser &&
+        `${selectedUser.firstName} ${selectedUser.lastName}`.toLowerCase() ===
+          trimmed.toLowerCase()
+      ) {
+        setUserResults([]);
+        setSearchingUsers(false);
+        return;
+      }
+
+      try {
+        setSearchingUsers(true);
+
+        const response = await axios.get(`${API_BASE_URL}/search-users`, {
+          params: { query: trimmed },
+        });
+
+        setUserResults(Array.isArray(response.data) ? response.data : []);
+      } catch (error) {
+        console.error("User search failed:", error);
+        setUserResults([]);
+      } finally {
+        setSearchingUsers(false);
+      }
+    }, 300);
+
+    return () => clearTimeout(debounce);
+  }, [userSearch, selectedUser]);
+
   const handleExportChange = (e) => {
     const { name, value } = e.target;
     setExportForm((prev) => ({
       ...prev,
       [name]: value,
     }));
+  };
+
+  const handleSelectUser = (user) => {
+    setSelectedUser(user);
+    setUserSearch(`${user.firstName} ${user.lastName}`);
+    setUserResults([]);
+  };
+
+  const handleClearSelectedUser = () => {
+    setSelectedUser(null);
+    setUserSearch("");
+    setUserResults([]);
+  };
+
+  const resetExportModal = () => {
+    setExportForm({
+      startDate: "",
+      endDate: "",
+      visitorTypes: ["all"],
+    });
+    setExportError("");
+    setUserSearch("");
+    setUserResults([]);
+    setSelectedUser(null);
+    setSearchingUsers(false);
   };
 
   const handleExportSubmit = async (e) => {
@@ -106,13 +208,19 @@ const Navbar = ({ logs = [] }) => {
     try {
       setExportLoading(true);
 
-      const response = await axios.post(
-        "/api/exports/visitor-records",
-        {
-          startDate: exportForm.startDate,
-          endDate: exportForm.endDate,
-          visitorType: exportForm.visitorType,
-        },
+      const params = new URLSearchParams({
+        type: exportForm.visitorTypes.join(","),
+        start: exportForm.startDate,
+        end: exportForm.endDate,
+      });
+
+      if (selectedUser) {
+        params.append("firstName", selectedUser.firstName);
+        params.append("lastName", selectedUser.lastName);
+      }
+      console.log(params.toString());
+      const response = await axios.get(
+        `${API_BASE_URL}/export?${params.toString()}`,
         {
           responseType: "blob",
         }
@@ -140,11 +248,7 @@ const Navbar = ({ logs = [] }) => {
       window.URL.revokeObjectURL(url);
 
       setExportModalOpen(false);
-      setExportForm({
-        startDate: "",
-        endDate: "",
-        visitorType: "all",
-      });
+      resetExportModal();
     } catch (error) {
       console.error("Export failed:", error);
       setExportError("Failed to export records. Please try again.");
@@ -164,9 +268,7 @@ const Navbar = ({ logs = [] }) => {
   return (
     <>
       <div className={styles.container}>
-        <div className={styles.left}>
-          <h3>Bobak Guests</h3>
-        </div>
+        <div className={styles.left}></div>
 
         <div className={styles.right}>
           <div>
@@ -187,8 +289,6 @@ const Navbar = ({ logs = [] }) => {
           </div>
 
           <div className={styles.notificationWrapper} ref={notificationsRef}>
-           
-
             {notificationsOpen && (
               <div className={styles.notificationsDropdown}>
                 <div className={styles.notificationsHeader}>
@@ -272,7 +372,10 @@ const Navbar = ({ logs = [] }) => {
                 <User size={16} />
               </div>
 
-              <span className={styles.userName}></span>
+              <div className={styles.userMeta}>
+                <span className={styles.userLabel}>Account</span>
+                <span className={styles.userName}>Administrator</span>
+              </div>
 
               <ChevronDown
                 size={16}
@@ -308,7 +411,10 @@ const Navbar = ({ logs = [] }) => {
               <button
                 type="button"
                 className={styles.modalCloseBtn}
-                onClick={() => setExportModalOpen(false)}
+                onClick={() => {
+                  setExportModalOpen(false);
+                  resetExportModal();
+                }}
               >
                 <X size={18} />
               </button>
@@ -346,22 +452,91 @@ const Navbar = ({ logs = [] }) => {
               </div>
 
               <div className={styles.formGroup}>
-                <label htmlFor="visitorType" className={styles.formLabel}>
-                  Visitor Type
+                <label className={styles.formLabel}>Visitor Type</label>
+
+                <div className={styles.checkboxGroup}>
+                  {visitorTypeOptions.map((item) => (
+                    <button
+                      key={item.value}
+                      type="button"
+                      className={`${styles.checkboxItem} ${
+                        exportForm.visitorTypes.includes(item.value)
+                          ? styles.checkboxActive
+                          : ""
+                      }`}
+                      onClick={() => toggleVisitorType(item.value)}
+                    >
+                      <div className={styles.checkboxIcon}>
+                        {exportForm.visitorTypes.includes(item.value) && "✓"}
+                      </div>
+                      <span>{item.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className={styles.formGroup}>
+                <label htmlFor="userSearch" className={styles.formLabel}>
+                  Search User
                 </label>
-                <select
-                  id="visitorType"
-                  name="visitorType"
-                  value={exportForm.visitorType}
-                  onChange={handleExportChange}
-                  className={styles.formSelect}
-                >
-                  <option value="all">All</option>
-                  <option value="temp">Temp</option>
-                  <option value="driver">Driver</option>
-                  <option value="visitor">Visitor</option>
-                  <option value="contractor">Contractor</option>
-                </select>
+
+                <div className={styles.userSearchWrapper}>
+                  <input
+                    id="userSearch"
+                    type="text"
+                    value={userSearch}
+                    onChange={(e) => {
+                      setUserSearch(e.target.value);
+                      setSelectedUser(null);
+                    }}
+                    placeholder="Type first or last name..."
+                    className={styles.formInput}
+                    autoComplete="off"
+                  />
+
+                  {selectedUser && (
+                    <div className={styles.selectedUserRow}>
+                      <span className={styles.selectedUserPill}>
+                        {selectedUser.firstName} {selectedUser.lastName}
+                      </span>
+                      <button
+                        type="button"
+                        className={styles.clearUserButton}
+                        onClick={handleClearSelectedUser}
+                      >
+                        Clear selected user
+                      </button>
+                    </div>
+                  )}
+
+                  {!selectedUser && userResults.length > 0 && (
+                    <div className={styles.userResultsDropdown}>
+                      {userResults.map((user, index) => (
+                        <button
+                          key={`${user.firstName}-${user.lastName}-${index}`}
+                          type="button"
+                          className={styles.userResultItem}
+                          onClick={() => handleSelectUser(user)}
+                        >
+                          {user.firstName} {user.lastName}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {!selectedUser && searchingUsers && (
+                    <div className={styles.userSearchHint}>Searching...</div>
+                  )}
+
+                  {!selectedUser &&
+                    !searchingUsers &&
+                    userSearch.trim() &&
+                    userResults.length === 0 && (
+                      <div className={styles.userSearchHint}>
+                        No users found.
+                      </div>
+                    )}
+                </div>
               </div>
 
               {exportError && (
@@ -372,7 +547,10 @@ const Navbar = ({ logs = [] }) => {
                 <button
                   type="button"
                   className={styles.modalSecondaryButton}
-                  onClick={() => setExportModalOpen(false)}
+                  onClick={() => {
+                    setExportModalOpen(false);
+                    resetExportModal();
+                  }}
                 >
                   Cancel
                 </button>

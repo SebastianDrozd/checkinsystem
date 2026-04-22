@@ -1,422 +1,466 @@
 'use client';
 
+import { useMemo, useState } from "react";
 import { getAllACheckIns, getDashboardCards } from "@/api/guests";
 import { getTodaysEvents } from "@/api/events";
 import styles from "../../styles/Dashboard.module.css";
 import {
-    Users,
-    UserRound,
-    Truck,
-    Briefcase,
-    LogIn,
-    LogOut,
-    User,
-    ShieldCheck,
-    Activity,
-    ChevronRight,
+  Users,
+  Truck,
+  Briefcase,
+  ShieldCheck,
+  Activity,
+  CalendarRange,
+  ArrowUpRight,
+  Clock3,
+  UserRound,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
+import {
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  CartesianGrid,
+  Tooltip,
+  XAxis,
+  YAxis,
+  BarChart,
+  Bar,
+} from "recharts";
+
+const RANGE_OPTIONS = [
+  { key: "today", label: "Today" },
+  { key: "7d", label: "Last 7 Days" },
+];
+
+const TYPE_CONFIG = {
+  Visitor: { icon: UserRound, tone: "green" },
+  Driver: { icon: Truck, tone: "orange" },
+  Contractor: { icon: Briefcase, tone: "blue" },
+  Temp: { icon: Users, tone: "purple" },
+};
+
+function formatHourLabel(hour) {
+  const suffix = hour >= 12 ? "PM" : "AM";
+  const normalized = hour % 12 === 0 ? 12 : hour % 12;
+  return `${normalized} ${suffix}`;
+}
+
+function formatShortHour(hour) {
+  const suffix = hour >= 12 ? "p" : "a";
+  const normalized = hour % 12 === 0 ? 12 : hour % 12;
+  return `${normalized}${suffix}`;
+}
+
+function getDateKey(date) {
+  const d = new Date(date);
+  const year = d.getFullYear();
+  const month = `${d.getMonth() + 1}`.padStart(2, "0");
+  const day = `${d.getDate()}`.padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function getDayLabel(date) {
+  return new Date(date).toLocaleDateString([], { weekday: "short" });
+}
+
+function getHourBucketData(events, startHour = 6, endHour = 18) {
+  const map = {};
+
+  for (let h = startHour; h <= endHour; h++) {
+    map[h] = 0;
+  }
+
+  events.forEach((event) => {
+    const hour = new Date(event.time).getHours();
+    if (hour >= startHour && hour <= endHour) {
+      map[hour] += 1;
+    }
+  });
+
+  return Object.entries(map).map(([hour, value]) => ({
+    hour: Number(hour),
+    label: formatShortHour(Number(hour)),
+    fullLabel: formatHourLabel(Number(hour)),
+    value,
+  }));
+}
+
+function getLast7DaysData(events) {
+  const today = new Date();
+  const dates = Array.from({ length: 7 }, (_, index) => {
+    const d = new Date(today);
+    d.setDate(today.getDate() - (6 - index));
+    return d;
+  });
+
+  const counts = {};
+  dates.forEach((date) => {
+    counts[getDateKey(date)] = 0;
+  });
+
+  events.forEach((event) => {
+    const key = getDateKey(event.time);
+    if (key in counts) {
+      counts[key] += 1;
+    }
+  });
+
+  return dates.map((date) => {
+    const key = getDateKey(date);
+    return {
+      label: getDayLabel(date),
+      fullLabel: new Date(date).toLocaleDateString([], {
+        month: "short",
+        day: "numeric",
+      }),
+      value: counts[key] || 0,
+      dateKey: key,
+    };
+  });
+}
+
+function getHeatmapData(events, daysBack = 7, startHour = 6, endHour = 18) {
+  const today = new Date();
+  const dates = Array.from({ length: daysBack }, (_, index) => {
+    const d = new Date(today);
+    d.setDate(today.getDate() - (daysBack - 1 - index));
+    return d;
+  });
+
+  const matrix = [];
+  const counts = {};
+
+  dates.forEach((date) => {
+    const dayKey = getDateKey(date);
+    counts[dayKey] = {};
+    for (let h = startHour; h <= endHour; h++) {
+      counts[dayKey][h] = 0;
+    }
+  });
+
+  events.forEach((event) => {
+    const d = new Date(event.time);
+    const dayKey = getDateKey(d);
+    const hour = d.getHours();
+
+    if (counts[dayKey] && hour >= startHour && hour <= endHour) {
+      counts[dayKey][hour] += 1;
+    }
+  });
+
+  dates.forEach((date) => {
+    const dayKey = getDateKey(date);
+    for (let h = startHour; h <= endHour; h++) {
+      matrix.push({
+        dayKey,
+        dayLabel: getDayLabel(date),
+        hour: h,
+        hourLabel: formatShortHour(h),
+        value: counts[dayKey][h],
+      });
+    }
+  });
+
+  return matrix;
+}
+
+function getDistributionData(dashboardCards) {
+  return [
+    { name: "Visitors", value: dashboardCards?.visitors ?? 0 },
+    { name: "Drivers", value: dashboardCards?.drivers ?? 0 },
+    { name: "Contractors", value: dashboardCards?.contractors ?? 0 },
+    { name: "Temps", value: dashboardCards?.temps ?? 0 },
+  ];
+}
+
+function getPeakLabel(series) {
+  if (!series.length) return "No peak";
+  const peak = [...series].sort((a, b) => b.value - a.value)[0];
+  if (!peak || peak.value === 0) return "No activity yet";
+  return peak.fullLabel || peak.label;
+}
 
 export default function DashboardPage() {
-    const { data: signins = [], isLoading } = useQuery({
-        queryKey: ["signins"],
-        queryFn: () => getAllACheckIns(),
-    });
+  const [range, setRange] = useState("today");
 
-    const { data: dashboardCards } = useQuery({
-        queryKey: ["dashboardCards"],
-        queryFn: () => getDashboardCards(),
-    });
+  const {
+    data: signins = [],
+    isLoading: signinsLoading,
+  } = useQuery({
+    queryKey: ["signins"],
+    queryFn: () => getAllACheckIns(),
+    refetchInterval: 30000,
+    refetchOnWindowFocus: true,
+  });
 
-    const { data: events = [] } = useQuery({
-        queryKey: ["events"],
-        queryFn: () => getTodaysEvents(),
-    });
+  const {
+    data: dashboardCards,
+    isLoading: cardsLoading,
+  } = useQuery({
+    queryKey: ["dashboardCards"],
+    queryFn: () => getDashboardCards(),
+    refetchInterval: 30000,
+    refetchOnWindowFocus: true,
+  });
 
-    const stats = [
-        {
-            label: "Visitors",
-            value: dashboardCards?.currentlySignedIn ?? 0,
-            sub: "Active guests on site",
-            icon: Users,
-            tone: "green",
-        },
-        {
-            label: "Drivers",
-            value: dashboardCards?.drivers ?? 0,
-            sub: "All sign-ins today",
-            icon: Truck,
-            tone: "orange",
-        },
-        {
-            label: "Contractors",
-            value: dashboardCards?.contractors ?? 0,
-            sub: "Guests and meetings",
-            icon: Briefcase,
-            tone: "blue",
-        },
-        {
-            label: "Temps",
-            value: dashboardCards?.temps ?? 0,
-            sub: "Pickups and deliveries",
-            icon: Users,
-            tone: "purple",
-        },
-    ];
+  const {
+    data: events = [],
+    isLoading: eventsLoading,
+  } = useQuery({
+    queryKey: ["events", range],
+    queryFn: () => getTodaysEvents(range),
+    refetchInterval: 30000,
+    refetchOnWindowFocus: true,
+  });
 
-    const signInBreakdown = [
-        {
-            label: "Visitors",
-            value: dashboardCards?.visitors ?? 0,
-            icon: UserRound,
-            tone: "green",
-        },
-        {
-            label: "Drivers",
-            value: dashboardCards?.drivers ?? 0,
-            icon: Truck,
-            tone: "orange",
-        },
-        {
-            label: "Contractors",
-            value: dashboardCards?.contractors ?? 0,
-            icon: Briefcase,
-            tone: "blue",
-        },
-        {
-            label: "Temps",
-            value: dashboardCards?.temps ?? 0,
-            icon: Users,
-            tone: "purple",
-        },
-    ];
+  const isLoading = signinsLoading || cardsLoading || eventsLoading;
 
-    const trafficBars = [
-        { label: "6a", value: 3 },
-        { label: "8a", value: 9 },
-        { label: "10a", value: 6 },
-        { label: "12p", value: 11 },
-        { label: "2p", value: 7 },
-        { label: "4p", value: 4 },
-        { label: "6p", value: 2 },
-    ];
+  const stats = [
+    {
+      label: "Visitors",
+      value: dashboardCards?.visitors ?? 0,
+      sub: "Guest arrivals",
+      icon: UserRound,
+      tone: "green",
+    },
+    {
+      label: "Drivers",
+      value: dashboardCards?.drivers ?? 0,
+      sub: "Dock and delivery traffic",
+      icon: Truck,
+      tone: "orange",
+    },
+    {
+      label: "Contractors",
+      value: dashboardCards?.contractors ?? 0,
+      sub: "External work on-site",
+      icon: Briefcase,
+      tone: "blue",
+    },
+    {
+      label: "Temps",
+      value: dashboardCards?.temps ?? 0,
+      sub: "Temporary labor activity",
+      icon: Users,
+      tone: "purple",
+    },
+  ];
 
-    const maxTraffic = Math.max(...trafficBars.map((bar) => bar.value), 1);
+  const totalOnSite = signins.length;
+  const totalEvents = events.length;
+  const signedInCount = events.filter((e) => e.action === "Signed in").length;
+  const signedOutCount = events.filter((e) => e.action === "Signed out").length;
 
-    if (isLoading) {
-        return (
-            <div className={styles.page}>
-                <div className={styles.header}></div>
+  const lineData = useMemo(() => {
+    return range === "today" ? getHourBucketData(events) : getLast7DaysData(events);
+  }, [events, range]);
 
-                <div className={styles.heroGrid}>
-                    <div className={styles.statsGrid}>
-                        {Array.from({ length: 4 }).map((_, index) => (
-                            <div key={index} className={`${styles.statCard} ${styles.skeletonCard}`}>
-                                <div className={styles.statTop}>
-                                    <div className={`${styles.skeletonIcon} ${styles.skeletonShimmer}`}></div>
-                                </div>
-                                <div className={`${styles.skeletonValue} ${styles.skeletonShimmer}`}></div>
-                                <div className={`${styles.skeletonLabel} ${styles.skeletonShimmer}`}></div>
-                                <div className={`${styles.skeletonSub} ${styles.skeletonShimmer}`}></div>
-                            </div>
-                        ))}
-                    </div>
+  const heatmapData = useMemo(() => getHeatmapData(events), [events]);
 
-                    <div className={`${styles.panel} ${styles.chartPanel}`}>
-                        <div className={styles.panelHeader}>
-                            <div>
-                                <div className={`${styles.skeletonHeading} ${styles.skeletonShimmer}`}></div>
-                                <div className={`${styles.skeletonText} ${styles.skeletonShimmer}`}></div>
-                            </div>
-                            <div className={`${styles.skeletonPanelIcon} ${styles.skeletonShimmer}`}></div>
-                        </div>
+  const distributionData = useMemo(() => getDistributionData(dashboardCards), [dashboardCards]);
 
-                        <div className={styles.chartBody}>
-                            <div className={styles.chartBars}>
-                                {Array.from({ length: 7 }).map((_, index) => (
-                                    <div key={index} className={styles.chartBarItem}>
-                                        <div className={styles.chartBarTrack}>
-                                            <div
-                                                className={`${styles.skeletonChartBar} ${styles.skeletonShimmer}`}
-                                                style={{
-                                                    height: `${[45, 75, 58, 88, 64, 52, 36][index]}%`,
-                                                }}
-                                            />
-                                        </div>
-                                        <span className={`${styles.skeletonMiniText} ${styles.skeletonShimmer}`}></span>
-                                        <span className={`${styles.skeletonMiniText} ${styles.skeletonShimmer}`}></span>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
-                </div>
+  const maxDistribution = Math.max(...distributionData.map((item) => item.value), 1);
+  const maxHeat = Math.max(...heatmapData.map((item) => item.value), 1);
 
-                <div className={styles.contentGrid}>
-                    <div className={styles.leftColumn}>
-                        <div className={`${styles.panel} ${styles.signinsPanel}`}>
-                            <div className={styles.panelHeader}>
-                                <div>
-                                    <div className={`${styles.skeletonHeading} ${styles.skeletonShimmer}`}></div>
-                                    <div className={`${styles.skeletonText} ${styles.skeletonShimmer}`}></div>
-                                </div>
-                                <div className={`${styles.skeletonButton} ${styles.skeletonShimmer}`}></div>
-                            </div>
+  const peakLabel = getPeakLabel(lineData);
+  const busiestType = [...distributionData].sort((a, b) => b.value - a.value)[0];
+  const averagePerBucket =
+    lineData.length > 0
+      ? Math.round(lineData.reduce((sum, item) => sum + item.value, 0) / lineData.length)
+      : 0;
 
-                            <div className={styles.panelBody}>
-                                <div className={styles.signinList}>
-                                    {Array.from({ length: 6 }).map((_, index) => (
-                                        <div key={index} className={styles.signinRow}>
-                                            <div className={styles.userBlock}>
-                                                <div className={`${styles.avatar} ${styles.skeletonShimmer}`}></div>
-
-                                                <div className={styles.userMeta}>
-                                                    <div className={`${styles.skeletonName} ${styles.skeletonShimmer}`}></div>
-                                                    <div className={`${styles.skeletonSubLine} ${styles.skeletonShimmer}`}></div>
-                                                </div>
-                                            </div>
-
-                                            <div className={styles.signinRowRight}>
-                                                <div className={`${styles.skeletonBadge} ${styles.skeletonShimmer}`}></div>
-                                                <div className={`${styles.skeletonTime} ${styles.skeletonShimmer}`}></div>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className={styles.rightColumn}>
-                        <div className={`${styles.panel} ${styles.activityPanel}`}>
-                            <div className={styles.panelHeader}>
-                                <div>
-                                    <div className={`${styles.skeletonHeading} ${styles.skeletonShimmer}`}></div>
-                                    <div className={`${styles.skeletonText} ${styles.skeletonShimmer}`}></div>
-                                </div>
-                            </div>
-
-                            <div className={styles.panelBody}>
-                                <div className={styles.activityList}>
-                                    {Array.from({ length: 7 }).map((_, index) => (
-                                        <div key={index} className={styles.activityItem}>
-                                            <div className={`${styles.activityIcon} ${styles.skeletonShimmer}`}></div>
-
-                                            <div className={styles.activityContent}>
-                                                <div className={`${styles.skeletonActivityLine} ${styles.skeletonShimmer}`}></div>
-                                                <div className={`${styles.skeletonActivityTime} ${styles.skeletonShimmer}`}></div>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        );
-    }
+  const customTooltip = ({ active, payload, label }) => {
+    if (!active || !payload?.length) return null;
 
     return (
-        <div className={styles.page}>
-            <div className={styles.header}>
-
-
-
-            </div>
-
-            <div className={styles.heroGrid}>
-
-
-                <div className={styles.statsGrid}>
-                    {stats.map((stat) => {
-                        const Icon = stat.icon;
-
-                        return (
-                            <div key={stat.label} className={styles.statCard}>
-                                <div className={styles.statTop}>
-                                    <div className={`${styles.statIcon} ${styles[stat.tone]}`}>
-                                        <Icon size={18} strokeWidth={2.2} />
-                                    </div>
-                                </div>
-
-                                <div className={styles.statValue}>{stat.value}</div>
-                                <div className={styles.statLabel}>{stat.label}</div>
-                                <div className={styles.statSub}>{stat.sub}</div>
-                            </div>
-                        );
-                    })}
-                </div>
-                <div className={`${styles.panel} ${styles.chartPanel}`}>
-                    <div className={styles.panelHeader}>
-                        <div>
-                            <h2>Today’s Traffic</h2>
-                            <p>Estimated site activity across the day</p>
-                        </div>
-                        <div className={styles.panelHeaderIcon}>
-                            <Activity size={16} strokeWidth={2.2} />
-                        </div>
-                    </div>
-
-                    <div className={styles.chartBody}>
-                        <div className={styles.chartBars}>
-                            {trafficBars.map((bar) => (
-                                <div key={bar.label} className={styles.chartBarItem}>
-                                    <div className={styles.chartBarTrack}>
-                                        <div
-                                            className={styles.chartBarFill}
-                                            style={{ height: `${(bar.value / maxTraffic) * 100}%` }}
-                                        />
-                                    </div>
-                                    <span className={styles.chartBarValue}>{bar.value}</span>
-                                    <span className={styles.chartBarLabel}>{bar.label}</span>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div className={styles.contentGrid}>
-                <div className={styles.leftColumn}>
-
-                    <div className={`${styles.panel} ${styles.signinsPanel}`}>
-                        <div className={styles.panelHeader}>
-                            <div>
-                                <h2>Current Sign-Ins</h2>
-                                <p>Compact live roster of everyone currently on site</p>
-                            </div>
-                            <button className={styles.ghostButton}>
-                                View all <ChevronRight size={15} />
-                            </button>
-                        </div>
-
-                        <div className={styles.panelBody}>
-                            {signins.length > 0 ? (
-                                <div className={styles.tableWrap}>
-                                    <table className={styles.signinsTable}>
-                                        <thead>
-                                            <tr>
-                                                <th>Person</th>
-                                                <th>Type</th>
-                                                <th>Company</th>
-                                                <th>Department</th>
-                                                <th>Time In</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {signins.map((user) => {
-                                                const fullName = `${user.firstName} ${user.lastName}`;
-
-                                                const typeConfig = {
-                                                    Visitor: { color: styles.visitor, icon: UserRound },
-                                                    Driver: { color: styles.driver, icon: Truck },
-                                                    Temp: { color: styles.temp, icon: Users },
-                                                    Contractor: { color: styles.contractor, icon: Briefcase },
-                                                };
-
-                                                const config = typeConfig[user.type] || {};
-                                                const Icon = config.icon;
-
-                                                return (
-                                                    <tr key={user.id}>
-                                                        <td>
-                                                            <div className={styles.tableUserCell}>
-                                                                <div className={styles.avatar}>
-                                                                    <User size={15} strokeWidth={2.2} />
-                                                                </div>
-                                                                <div className={styles.tableUserMeta}>
-                                                                    <span className={styles.tableUserName}>{fullName}</span>
-                                                                </div>
-                                                            </div>
-                                                        </td>
-
-                                                        <td>
-                                                            <span className={`${styles.badge} ${config.color}`}>
-                                                                {Icon && <Icon size={12} />}
-                                                                {user.type}
-                                                            </span>
-                                                        </td>
-
-                                                        <td>
-                                                            <span className={styles.tableCellMuted}>
-                                                                {user.company || "—"}
-                                                            </span>
-                                                        </td>
-
-                                                        <td>
-                                                            <span className={styles.tableCellMuted}>
-                                                                {user.department || "—"}
-                                                            </span>
-                                                        </td>
-
-                                                        <td>
-                                                            <span className={styles.timeCell}>
-                                                                {new Date(user.timeIn).toLocaleTimeString([], {
-                                                                    hour: "numeric",
-                                                                    minute: "2-digit",
-                                                                })}
-                                                            </span>
-                                                        </td>
-                                                    </tr>
-                                                );
-                                            })}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            ) : (
-                                <div className={styles.emptyState}>No active sign-ins.</div>
-                            )}
-                        </div>
-                    </div>
-
-                </div>
-
-                <div className={styles.rightColumn}>
-
-
-                    <div className={`${styles.panel} ${styles.activityPanel}`}>
-                        <div className={styles.panelHeader}>
-                            <div>
-                                <h2>Recent Activity</h2>
-                                <p>Latest sign-in and sign-out events</p>
-                            </div>
-                        </div>
-
-                        <div className={styles.panelBody}>
-                            <div className={styles.activityList}>
-                                {events.length > 0 ? (
-                                    events.map((item) => (
-                                        <div key={item.id} className={styles.activityItem}>
-                                            <div className={styles.activityIcon}>
-                                                {item.Action === "Signed in" ? (
-                                                    <LogIn size={18} strokeWidth={2.2} />
-                                                ) : (
-                                                    <LogOut size={18} strokeWidth={2.2} />
-                                                )}
-                                            </div>
-
-                                            <div className={styles.activityContent}>
-                                                <p>
-                                                    {item.user} {item.Action} as {item.type}
-                                                </p>
-                                                <span>
-                                                    {new Date(item.time).toLocaleTimeString([], {
-                                                        hour: "numeric",
-                                                        minute: "2-digit",
-                                                    })}
-                                                </span>
-                                            </div>
-                                        </div>
-                                    ))
-                                ) : (
-                                    <div className={styles.emptyState}>No recent events.</div>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+      <div className={styles.chartTooltip}>
+        <div className={styles.tooltipLabel}>{label}</div>
+        <div className={styles.tooltipValue}>{payload[0].value} events</div>
+      </div>
     );
+  };
+
+  if (isLoading) {
+    return (
+      <div className={styles.page}>
+        <div className={styles.loadingGrid}>
+          <div className={`${styles.skeletonBlock} ${styles.skeletonHero}`} />
+          <div className={styles.skeletonStatsGrid}>
+            {Array.from({ length: 4 }).map((_, index) => (
+              <div key={index} className={`${styles.skeletonBlock} ${styles.skeletonCard}`} />
+            ))}
+          </div>
+          <div className={`${styles.skeletonBlock} ${styles.skeletonPanel}`} />
+          <div className={styles.lowerGrid}>
+            <div className={`${styles.skeletonBlock} ${styles.skeletonPanel}`} />
+            <div className={`${styles.skeletonBlock} ${styles.skeletonPanel}`} />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className={styles.page}>
+      <div className={styles.header}>
+        <div>
+    
+          <h1 className={styles.title}>Site Activity Dashboard</h1>
+          <p className={styles.subtitle}>
+            Live operational view of sign-ins, traffic patterns, and visitor mix.
+          </p>
+        </div>
+
+        <div className={styles.headerActions}>
+          <div className={styles.rangeToggle}>
+            {RANGE_OPTIONS.map((option) => (
+              <button
+                key={option.key}
+                type="button"
+                className={`${styles.rangeButton} ${
+                  range === option.key ? styles.rangeButtonActive : ""
+                }`}
+                onClick={() => setRange(option.key)}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className={styles.topGrid}>
+        <div className={`${styles.panel} ${styles.chartPanel}`}>
+          <div className={styles.panelHeader}>
+            <div>
+              <h2>{range === "today" ? "Traffic by Hour" : "Traffic by Day"}</h2>
+              <p>
+                {range === "today"
+                  ? "Hourly sign activity across the day"
+                  : "Daily sign activity over the last 7 days"}
+              </p>
+            </div>
+            <div className={styles.panelHeaderIcon}>
+              <Activity size={16} strokeWidth={2.2} />
+            </div>
+          </div>
+
+          <div className={styles.chartBodyLarge}>
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={lineData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="trafficFill" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.32} />
+                    <stop offset="100%" stopColor="#3b82f6" stopOpacity={0.02} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid vertical={false} stroke="#e5e7eb" />
+                <XAxis
+                  dataKey={range === "today" ? "label" : "fullLabel"}
+                  tickLine={false}
+                  axisLine={false}
+                  tick={{ fontSize: 12, fill: "#64748b" }}
+                />
+                <YAxis
+                  allowDecimals={false}
+                  tickLine={false}
+                  axisLine={false}
+                  tick={{ fontSize: 12, fill: "#64748b" }}
+                />
+                <Tooltip content={customTooltip} />
+                <Area
+                  type="monotone"
+                  dataKey="value"
+                  stroke="#2563eb"
+                  strokeWidth={3}
+                  fill="url(#trafficFill)"
+                  activeDot={{ r: 5 }}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        <div className={styles.statsGrid}>
+          {stats.map((stat) => {
+            const Icon = stat.icon;
+
+            return (
+              <div key={stat.label} className={styles.statCard}>
+                <div className={styles.statTop}>
+                  <div className={`${styles.statIcon} ${styles[stat.tone]}`}>
+                    <Icon size={18} strokeWidth={2.2} />
+                  </div>
+                  <span className={styles.statTrend}>
+                    <ArrowUpRight size={14} />
+                    Live
+                  </span>
+                </div>
+
+                <div className={styles.statValue}>{stat.value}</div>
+                <div className={styles.statLabel}>{stat.label}</div>
+                <div className={styles.statSub}>{stat.sub}</div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      
+
+      <div className={styles.bottomGrid}>
+        <div className={`${styles.panel} ${styles.heatmapPanel}`}>
+          <div className={styles.panelHeader}>
+            <div>
+              <h2>Activity Heatmap</h2>
+              <p>When traffic clusters throughout the week</p>
+            </div>
+            <div className={styles.panelHeaderIcon}>
+              <CalendarRange size={16} strokeWidth={2.2} />
+            </div>
+          </div>
+
+          <div className={styles.heatmapWrap}>
+            <div className={styles.heatmapHeader}>
+              <div className={styles.heatmapCorner} />
+              {Array.from({ length: 13 }, (_, index) => {
+                const hour = index + 6;
+                return (
+                  <div key={hour} className={styles.heatmapHeaderCell}>
+                    {formatShortHour(hour)}
+                  </div>
+                );
+              })}
+            </div>
+
+            {Array.from(new Set(heatmapData.map((item) => item.dayKey))).map((dayKey) => {
+              const rowCells = heatmapData.filter((item) => item.dayKey === dayKey);
+              return (
+                <div key={dayKey} className={styles.heatmapRow}>
+                  <div className={styles.heatmapDayLabel}>{rowCells[0]?.dayLabel}</div>
+                  {rowCells.map((cell) => {
+                    const intensity = cell.value === 0 ? 0 : Math.max(cell.value / maxHeat, 0.16);
+
+                    return (
+                      <div
+                        key={`${cell.dayKey}-${cell.hour}`}
+                        className={styles.heatmapCell}
+                        title={`${cell.dayLabel} ${formatHourLabel(cell.hour)}: ${cell.value} events`}
+                        style={{
+                          background: `rgba(37, 99, 235, ${intensity})`,
+                        }}
+                      >
+                        <span>{cell.value > 0 ? cell.value : ""}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }

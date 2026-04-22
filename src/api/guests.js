@@ -33,6 +33,12 @@ const getDashboardCards = async () => {
     const reponse = await axios.get(`${API_URL}/stats`);
     return reponse.data;
 }
+
+const exportRecords = async (type,start,end) => {
+    const reponse = await axios.get(`${API_URL}/export?type=${type}&start=${start}&end=${end}`);
+    return reponse.data;
+}
+
 module.exports = {
     CreateNewVisitor,
     CreateNewContractor,
@@ -41,4 +47,5 @@ module.exports = {
     getAllACheckIns,
     signOutGuest,
     getDashboardCards,
+    exportRecords
 }

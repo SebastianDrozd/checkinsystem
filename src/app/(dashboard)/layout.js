@@ -11,6 +11,7 @@ export default function DashboardLayout({ children }) {
       <body>
             <div className={styles.container}>
               <Navbar />
+              <Sidebar/>
               {children}
             </div>
       </body>

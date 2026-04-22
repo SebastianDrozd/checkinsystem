@@ -35,11 +35,11 @@ const Sidebar = () => {
             <House size={18} />
             <span>Home</span>
           </li>  
-          <li onClick={() => router.push("/dashboard/logs")} className={`${styles.listItem} ${path ==("/dashboard/logs") && styles.active}`}>
-            <ClipboardList size={18} />
-            <span>Logs</span>
-          </li>
          
+          <li onClick={() => router.push("/signins")}  className={`${styles.listItem} ${path ==("/signins") && styles.active}`}>
+            <ClipboardList size={18} />
+            <span>Sign Ins</span>
+          </li>  
         </ul>
       </nav>
     </aside>
